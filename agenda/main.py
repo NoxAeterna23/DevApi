@@ -12,18 +12,28 @@ def conectar_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-@app.get("/", status_code=202) # Mensaje de bienvenida
+@app.get(
+        "/", 
+         status_code=202, 
+         summary="Raiz/Bienvenida del Endpoint",
+         description="Muestra el mensaje de bienvenida de la API"
+) # Mensaje de bienvenida
 def read_root():
     return {
         "message": "Bienvenido a la Api :D",
         "datetime": time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime())
     }
 
-@app.get("/v1/contactos", status_code=202)
+@app.get(
+        "/v1/contactos", 
+         status_code=202,
+         summary="Consulta de los contactos",
+         description="Obtiene una consulta paginada de los contactos, con limit y skip"
+)
 def get_contactos(limit: int = 10, skip: int = 0):
 
     if limit < 0 or skip < 0: # Verifica que limit y skip sean mayores a 0 para que no devuelva todos los registros en caso de numero negativo.
-        raise HTTPException(status_code=400, detail="limit y skip deben ser positivos")
+        raise HTTPException(status_code=400, detail="limit y skip deben ser valores positivos")
 
     conn = conectar_db()
     cursor = conn.cursor()
@@ -47,7 +57,12 @@ def get_contactos(limit: int = 10, skip: int = 0):
         "skip": skip
     }
 
-@app.get("/v1/contacto", status_code=202)
+@app.get(
+        "/v1/contacto", 
+        status_code=202,
+        summary="Endpoint para obtener un contacto",
+        description="Endpoint que obtiene un solo contacto al pasarle la id o el nombre."
+)
 def get_contacto(id: int = None, nombre: str = None):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -73,7 +88,12 @@ class Contacto(BaseModel): # Se crea una clase Contacto con una librería que le
     telefono: str
     email: str
 
-@app.post("/v1/contacto", status_code=202)
+@app.post(
+        "/v1/contacto", 
+        status_code=202,
+        summary="Endpoint crea contacto",
+        description="Se utiliza para crear un contacto dandole nombre, numero y un email."
+)
 def create_contacto(contacto: Contacto): # Le paso la clase con el esqueleto
 
     conn = conectar_db()
@@ -87,7 +107,12 @@ def create_contacto(contacto: Contacto): # Le paso la clase con el esqueleto
 
     return {"message": "Contacto Creado."}
 
-@app.put("/v1/contacto")
+@app.put(
+        "/v1/contacto", 
+        status_code=202,
+        summary="Endpoint actualiza contacto",
+        description="Actualiza un contacto de la lista de contactos."
+)
 def update_contacto(id: int, contacto: Contacto):
 
     conn = conectar_db()
@@ -100,7 +125,7 @@ def update_contacto(id: int, contacto: Contacto):
 
     return {"message": "Contacto actualizado"}
 
-@app.delete("/v1/contacto")
+@app.delete("/v1/contacto", status_code=202)
 def delete_contacto(id: int):
 
     conn = conectar_db
@@ -109,3 +134,4 @@ def delete_contacto(id: int):
     cursor.execute("DELETE FROM contactos WHERE id_contacto=?", (id,))
 
     return {"message": "Contacto eliminado"}
+
