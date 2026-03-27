@@ -62,9 +62,11 @@ def get_contacto(id: int = None, nombre: str = None):
     contacto = cursor.fetchone()
 
     if not contacto:
-        raise HTTPException(status_code=400, detail="No se encontró el contacto.")
+        raise HTTPException(status_code=400, detail="Contacto no encontrado.")
     
-    return contacto
+    return {"message": "Contacto encontrado",
+            "item": contacto
+    }
 
 class Contacto(BaseModel): # Se crea una clase Contacto con una librería que le ayuda a validar automaticamente los datos insertados sin extraer manualmente
     nombre: str             # el JSON, y con el esqueleto de lo que se le va a pasar a SQL para insertar los datos.
@@ -81,7 +83,29 @@ def create_contacto(contacto: Contacto): # Le paso la clase con el esqueleto
         "INSERT INTO contactos (nombre, telefono, email) VALUES (?, ?, ?)", (contacto.nombre, contacto.telefono, contacto.email)
     )
 
-    conn.commit
+    conn.commit()
 
     return {"message": "Contacto Creado."}
 
+@app.put("/v1/contacto")
+def update_contacto(id: int, contacto: Contacto):
+
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "UPDATE contactos SET nombre=?, telefono=?, email=? WHERE id_contacto=?", (contacto.nombre, contacto.telefono, contacto.email, id,))
+
+    conn.commit()
+
+    return {"message": "Contacto actualizado"}
+
+@app.delete("/v1/contacto")
+def delete_contacto(id: int):
+
+    conn = conectar_db
+    cursor = conn.cursor
+
+    cursor.execute("DELETE FROM contactos WHERE id_contacto=?", (id,))
+
+    return {"message": "Contacto eliminado"}
