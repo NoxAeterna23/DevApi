@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException
 import sqlite3
 import time
-import pytest
-import requests
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -16,7 +15,7 @@ def conectar_db():
 @app.get("/", status_code=202) # Mensaje de bienvenida
 def read_root():
     return {
-        "message": "MENSAJE DE BIENVENIDA",
+        "message": "Bienvenido a la Api :D",
         "datetime": time.strftime("%m/%d/%Y, %H:%M:%S", time.localtime())
     }
 
@@ -34,9 +33,9 @@ def get_contactos(limit: int = 10, skip: int = 0):
         (limit, skip)
     )
 
-    rows = cursor.fetchall()
+    contactos = cursor.fetchall() 
 
-    contactos = [dict(row) for row in rows]
+    contactos = [dict(row) for row in contactos] # mete los contactos en un diccionario para su visualización más comoda abajo.
 
     return {
         "table": "contactos",
@@ -47,3 +46,42 @@ def get_contactos(limit: int = 10, skip: int = 0):
         "limit": limit,
         "skip": skip
     }
+
+@app.get("/v1/contacto", status_code=202)
+def get_contacto(id: int = None, nombre: str = None):
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    if id:
+        cursor.execute("SELECT * FROM contactos WHERE id_contacto=?", (id,))
+    elif nombre:
+        cursor.execute("SELECT * FROM contactos WHERE nombre=?", (nombre,))
+    else:
+        raise HTTPException(status_code=400, detail="Se debe ingresar un id o un nombre.")
+    
+    contacto = cursor.fetchone()
+
+    if not contacto:
+        raise HTTPException(status_code=400, detail="No se encontró el contacto.")
+    
+    return contacto
+
+class Contacto(BaseModel): # Se crea una clase Contacto con una librería que le ayuda a validar automaticamente los datos insertados sin extraer manualmente
+    nombre: str             # el JSON, y con el esqueleto de lo que se le va a pasar a SQL para insertar los datos.
+    telefono: str
+    email: str
+
+@app.post("/v1/contacto", status_code=202)
+def create_contacto(contacto: Contacto): # Le paso la clase con el esqueleto
+
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT INTO contactos (nombre, telefono, email) VALUES (?, ?, ?)", (contacto.nombre, contacto.telefono, contacto.email)
+    )
+
+    conn.commit
+
+    return {"message": "Contacto Creado."}
+
